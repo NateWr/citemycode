@@ -1,44 +1,44 @@
 .citemycode-modal {
-	display: none;
-	position: fixed;
-	top: 0;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	width: 100%;
-	height: 100%;
-	background: rgba(0,0,0,0.5);
-	z-index: 99999;
+  display: none;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99999;
 }
 
 .citemycode-modal--open {
-	display: block;
+  display: block;
 }
 
 .citemycode-modal__content {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	min-width: 20rem;
-	min-height: 10rem;
-	max-width: 90%;
-	max-height: 90%;
-	background: #fff;
-	border-radius: 0.25rem;
-	box-shadow: 0 0.05rem 0.25rem rgba(0,0,0,0.5);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 20rem;
+  min-height: 10rem;
+  max-width: 90%;
+  max-height: 90%;
+  background: #fff;
+  border-radius: 0.25rem;
+  box-shadow: 0 0.05rem 0.25rem rgba(0, 0, 0, 0.5);
 }
 
 .citemycode-modal__header {
-	padding: 0.5rem;
-	border-bottom: 1px solid rgba(0,0,0,0.2);
-	text-align: right;
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  text-align: right;
 }
 
 .citemycode-modal__citation {
-	padding: 1rem;
-	background: rgba(0,0,0,0.1);
-	border-bottom-left-radius: 0.25rem;
-	border-bottom-right-radius: 0.25rem;
-	overflow: scroll;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-bottom-left-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+  overflow: scroll;
 }
