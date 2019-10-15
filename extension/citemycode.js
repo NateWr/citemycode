@@ -55,7 +55,7 @@ function insertIframe(url){
 						author: codemeta.author
 							.map(author => author.familyName + ', ' + author.givenName)
 							.join(' and '),
-						title: codemeta.title,
+						title: codemeta.name,
 						url: codemeta.codeRepository,
 						version: codemeta.version,
 						publisher: codemeta.provider.name,
@@ -228,7 +228,7 @@ function run() {
         */
         if (checkRepoLandingPageUrl(currUrl)) {
             // Check if a codemeta.json file exits according to the URL
-            var cffURL = codemetaExists(currUrl);
+						var cffURL = codemetaExists(currUrl);
             if (cffURL != undefined) {
 								// Switch on button
                 insertIframe(
