@@ -95,19 +95,25 @@ function showCitation(codemetaUrl) {
 				// fail on anything but a pristine codemeta.json
 				var bibTexProps = {
 					/* Should contributors and maintainerse be included? */
-					author: codemeta.author
-						.map(author => author.familyName + ', ' + author.givenName)
-						.join(' and '),
-					title: codemeta.name,
-					url: codemeta.codeRepository,
-					version: codemeta.version,
-					publisher: codemeta.provider.name,
-					keywords: codemeta.keywords.join(', ')
+					author: Array.isArray(codemeta.author)
+							? codemeta.author
+								.map(author => author.familyName + ', ' + author.givenName)
+								.join(' and ')
+							: '',
+					title: codemeta.name || '',
+					url: codemeta.codeRepository || '',
+					version: codemeta.version || '',
+					publisher: codemeta.provider.name || '',
+					keywords: Array.isArray(codemeta.keywords)
+							? codemeta.keywords.join(', ')
+							: ''
 				};
 
 				var bibTex = '@misc{' + codemeta.identifier + ",";
 				for (var prop in bibTexProps) {
-					bibTex += "\n  " + prop + ' = {' + bibTexProps[prop] + '},';
+					if (bibTexProps[prop].length) {
+						bibTex += "\n  " + prop + ' = {' + bibTexProps[prop] + '},';
+					}
 				}
 				bibTex = bibTex.substr(0, bibTex.length - 1) + "\n}";
 
