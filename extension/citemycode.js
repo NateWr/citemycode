@@ -203,12 +203,14 @@ function run() {
             // Check if a codemeta.json file exits according to the URL
 						var cffURL = codemetaExists(currUrl);
             if (cffURL != undefined) {
-								// Switch on button
-                loadOnPage(
-									cffURL.replace('https://github.com', 'https://raw.githubusercontent.com')
-										.replace('/blob/', '/')
-								);
-            }
+							// Switch on button
+							loadOnPage(
+								cffURL.replace('https://github.com', 'https://raw.githubusercontent.com')
+									.replace('/blob/', '/')
+							);
+            } else {
+							loadOnPage();
+						}
         }
     }
 }
