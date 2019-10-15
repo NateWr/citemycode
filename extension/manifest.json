@@ -46,7 +46,8 @@
     "storage"
   ],
   "web_accessible_resources": [
-      "citemycode.html"
+			"citemycode.html",
+			"stylesheet.css"
   ],
   "options_ui": {
     "page": "options.html",

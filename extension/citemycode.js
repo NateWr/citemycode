@@ -3,7 +3,6 @@ if (chrome){
     browser = chrome
 }
 
-
 var devLog = function(str, obj){
     // only log to console if we're in Chrome with Nerd Mode enabled.
     if (settings && settings.showOaColor && navigator.userAgent.indexOf("Chrome") > -1){
@@ -29,30 +28,102 @@ var docAsStr;
 
 
 function insertIframe(url){
-    var iframe = document.createElement('iframe');
+		var iframe = document.createElement('iframe');
 
     // make sure we are not inserting iframe again and again
     if (iframeIsInserted){
         return false
     }
 
-    iframe.src = browser.extension.getURL('citemycode.html');
+		var button = document.createElement('button');
+		button.id = 'citemycode-button';
+		button.innerText = 'Cite My Code';
+		button.className = 'btn btn-sm ml-2';
+		button.addEventListener('click', event => {
+			document.getElementById('citemycode-modal')
+				.className = 'citemycode-modal citemycode-modal--open';
 
-    iframe.style.height = "50px";
-    iframe.style.width = '50px';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.top = '33%';
-    iframe.scrolling = 'no';
-    iframe.style.border = '0';
-    iframe.style.zIndex = '9999999999';
-    iframe.style.display = 'none;'
-    iframe.id = "citemycode";
+			// Get the codemeta.json file
+			$.ajax({
+				url: url,
+				method: 'GET',
+				success(r) {
+					var codemeta = JSON.parse(r);
 
-    // set a custom name and URL
-    iframe.name = "green#" + encodeURI(url)
+					var bibTexProps = {
+						/* Should contributors and maintainerse be included? */
+						author: codemeta.author
+							.map(author => author.familyName + ', ' + author.givenName)
+							.join(' and '),
+						title: codemeta.title,
+						url: codemeta.codeRepository,
+						version: codemeta.version,
+						publisher: codemeta.provider.name,
+						keywords: codemeta.keywords.join(', ')
+					};
 
-    document.documentElement.appendChild(iframe);
+					var bibTex = '@misc{' + codemeta.identifier + ",";
+					for (var prop in bibTexProps) {
+						bibTex += "\n  " + prop + ' = {' + bibTexProps[prop] + '},';
+					}
+					bibTex = bibTex.substr(0, bibTex.length - 1) + "\n}";
+
+					document.querySelector('.citemycode-modal__citation')
+						.innerHTML = bibTex;
+				}
+			});
+		});
+		var parent = document.querySelector('.file-navigation');
+		parent.insertBefore(button, parent.querySelector('.js-get-repo-select-menu'));
+
+		// Modal scaffold
+		var modal = document.createElement('div');
+		modal.id = 'citemycode-modal';
+		modal.className = 'citemycode-modal';
+		var modalContent = document.createElement('div');
+		modalContent.className = 'citemycode-modal__content';
+
+		// Header
+		var modalContentHeader = document.createElement('div');
+		modalContentHeader.className = 'citemycode-modal__header';
+		var modalCopyBtn = document.createElement('button');
+		modalCopyBtn.className = 'btn btn-sm';
+		modalCopyBtn.innerText = 'Copy to clipboard';
+		modalCopyBtn.addEventListener('click', event => {
+			// copy to clipboard
+			// https://hackernoon.com/copying-text-to-clipboard-with-javascript-df4d4988697f
+			var el = document.createElement('textarea');
+			el.value = document.querySelector('.citemycode-modal__citation').innerHTML;
+			document.body.appendChild(el);
+			el.select();
+			document.execCommand('copy');
+			document.body.removeChild(el);
+		});
+		var modalCloseButton = document.createElement('button');
+		modalCloseButton.className = 'btn btn-sm ml-2';
+		modalCloseButton.innerText = 'Close';
+		modalCloseButton.addEventListener('click', event => {
+			document.getElementById('citemycode-modal')
+				.className = 'citemycode-modal';
+		});
+		modalContentHeader.appendChild(modalCopyBtn);
+		modalContentHeader.appendChild(modalCloseButton);
+
+		// Citation
+		var modalCitation = document.createElement('pre');
+		modalCitation.className = 'citemycode-modal__citation';
+
+		modalContent.appendChild(modalContentHeader);
+		modalContent.appendChild(modalCitation);
+		modal.appendChild(modalContent);
+		document.body.appendChild(modal);
+
+		var css = document.createElement('link');
+		css.rel = 'stylesheet';
+		css.href = browser.extension.getURL('stylesheet.css');
+		css.type = 'text/css';
+		document.body.appendChild(css);
+
     iframeIsInserted = true
 }
 
@@ -91,7 +162,7 @@ var getAbsoluteUrl = (function() {
  ************************************************************************************/
 
 function checkRepoLandingPageUrl(gitHubURL) {
-    /* 
+    /*
         Check if the URL can possibly be on a repo landing page
     */
     var regex = /^https:\/\/github.com\/[\w-]+\/[\w-]+\/?$/;
@@ -112,13 +183,13 @@ function checkUrlExists(url) {
 }
 
 
-function citationCFFExists(landingPageURL) {
+function codemetaExists(landingPageURL) {
     // Check if URL ends with slash, if not, add it
     if (landingPageURL.substr(-1) != '/') {
         landingPageURL += '/';
     }
     // Append CITATION.cff to the URL
-    landingPageURL += "blob/master/CITATION.cff"
+		landingPageURL += "blob/master/codemeta.json"
     // Check if URL returns 404
     if (checkUrlExists(landingPageURL)) {
         return landingPageURL;
@@ -140,11 +211,11 @@ function run() {
     reportInstallation()
 
     // Get the current URL
-    var currUrl = window.location.href
-    
+		var currUrl = window.location.href
+
     /* Check if the current URL starts with
     https://github.com
-    
+
     We assume https protocol, as that's what GitHub
     uses per default and via forwarding from
     http.
@@ -152,15 +223,18 @@ function run() {
     forwards to non-prefixed URL per default.
     */
     if (currUrl.substring(0, 18) == "https://github.com") {
-        /* 
+        /*
         Check if we should show the button
         */
         if (checkRepoLandingPageUrl(currUrl)) {
-            // Check if a CITATION.cff file exits according to the URL
-            var cffURL = citationCFFExists(currUrl);
+            // Check if a codemeta.json file exits according to the URL
+            var cffURL = codemetaExists(currUrl);
             if (cffURL != undefined) {
-                // Switch on button
-                insertIframe(cffURL)
+								// Switch on button
+                insertIframe(
+									cffURL.replace('https://github.com', 'https://raw.githubusercontent.com')
+										.replace('/blob/', '/')
+								);
             }
         }
     }
@@ -175,7 +249,7 @@ function runWithSettings(){
 }
 
 function runWithDelay(){
-    var delay = 200  // milliseconds
+		var delay = 200  // milliseconds
 
     // Single-page apps take a while to fully load all the HTML,
     // and until they do we can't find the DOI
