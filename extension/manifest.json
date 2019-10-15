@@ -1,34 +1,14 @@
 {
   "name": "Cite My Code",
-  "version": "1.0.0",
-  "version_name":"Cite My Code 1.0.0",
+  "version": "1.1.0",
+  "version_name":"Cite My Code 1.1.0",
   "manifest_version": 2,
   "description": "Get BibTeX citation to a GitHub project while browsing.",
-  "icons": {
-    "16": "img/icon-16.png",
-    "32": "img/icon-32.png",
-    "48": "img/icon-48.png",
-    "64": "img/icon-64.png",
-    "128": "img/icon-128.png"
-  },
-  "applications": {
-    "gecko": {
-      "strict_min_version": "53.0"
-    }
-  },
   "browser_action": {
     "default_icon": "img/icon.png",
     "default_title": "Cite My Code",
     "default_popup": "popup.html"
   },
-  "background": {
-    "scripts": [
-      "background.js"
-    ],
-    "persistent": false
-  },
-  "content_security_policy": "script-src 'self' object-src 'self'",
-
   "content_scripts": [
     {
       "matches": [
@@ -40,17 +20,7 @@
       ]
     }
   ],
-  "permissions": [
-    "*://*.oadoi.org/*",
-    "activeTab",
-    "storage"
-  ],
   "web_accessible_resources": [
-			"citemycode.html",
 			"stylesheet.css"
-  ],
-  "options_ui": {
-    "page": "options.html",
-    "chrome_style": true
-  }
+  ]
 }

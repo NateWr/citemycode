@@ -3,21 +3,6 @@ if (chrome){
     browser = chrome
 }
 
-var devLog = function(str, obj){
-    // only log to console if we're in Chrome with Nerd Mode enabled.
-    if (settings && settings.showOaColor && navigator.userAgent.indexOf("Chrome") > -1){
-        console.log("citemycode: " + str, obj)
-    }
-}
-devLog("citemycode is running")
-
-// global variables:
-var iframeIsInserted = false
-var settings = {}
-var myHost = window.location.hostname
-var allSources = []
-var doi
-var docAsStr;
 
 
 /***********************************************************************************
@@ -27,52 +12,15 @@ var docAsStr;
  ************************************************************************************/
 
 
-function insertIframe(url){
-		var iframe = document.createElement('iframe');
-
-    // make sure we are not inserting iframe again and again
-    if (iframeIsInserted){
-        return false
-    }
-
+function loadOnPage(url){
 		var button = document.createElement('button');
 		button.id = 'citemycode-button';
 		button.innerText = 'Cite My Code';
 		button.className = 'btn btn-sm ml-2';
 		button.addEventListener('click', event => {
-			document.getElementById('citemycode-modal')
-				.className = 'citemycode-modal citemycode-modal--open';
-
-			// Get the codemeta.json file
-			$.ajax({
-				url: url,
-				method: 'GET',
-				success(r) {
-					var codemeta = JSON.parse(r);
-
-					var bibTexProps = {
-						/* Should contributors and maintainerse be included? */
-						author: codemeta.author
-							.map(author => author.familyName + ', ' + author.givenName)
-							.join(' and '),
-						title: codemeta.name,
-						url: codemeta.codeRepository,
-						version: codemeta.version,
-						publisher: codemeta.provider.name,
-						keywords: codemeta.keywords.join(', ')
-					};
-
-					var bibTex = '@misc{' + codemeta.identifier + ",";
-					for (var prop in bibTexProps) {
-						bibTex += "\n  " + prop + ' = {' + bibTexProps[prop] + '},';
-					}
-					bibTex = bibTex.substr(0, bibTex.length - 1) + "\n}";
-
-					document.querySelector('.citemycode-modal__citation')
-						.innerHTML = bibTex;
-				}
-			});
+			showCitation(url);
 		});
+
 		var parent = document.querySelector('.file-navigation');
 		parent.insertBefore(button, parent.querySelector('.js-get-repo-select-menu'));
 
@@ -123,35 +71,57 @@ function insertIframe(url){
 		css.href = browser.extension.getURL('stylesheet.css');
 		css.type = 'text/css';
 		document.body.appendChild(css);
-
-    iframeIsInserted = true
 }
 
 
-function reportInstallation(){
-    // this is so the citemycode.org/welcome page knows that this user
-    // has actually installed the extension.
-    var loc = window.location.host
-    if (loc.indexOf("citemycode.org") === 0){
-        devLog("installed. adding reporting div.")
-        $("<div style='display:none' id='citemycode-is-installed'></div>")
-            .appendTo("body")
-    }
+/**
+ * Get the citation data and show it in a modal
+ *
+ * @param {string} codemetaUrl
+ */
+function showCitation(codemetaUrl) {
+	document.getElementById('citemycode-modal')
+	.className = 'citemycode-modal citemycode-modal--open';
+
+	// A codemeta.json file exists so use that
+	if (codemetaUrl) {
+		$.ajax({
+			url: codemetaUrl,
+			method: 'GET',
+			success(r) {
+				var codemeta = JSON.parse(r);
+
+				// No error handling occurs here so it will
+				// fail on anything but a pristine codemeta.json
+				var bibTexProps = {
+					/* Should contributors and maintainerse be included? */
+					author: codemeta.author
+						.map(author => author.familyName + ', ' + author.givenName)
+						.join(' and '),
+					title: codemeta.name,
+					url: codemeta.codeRepository,
+					version: codemeta.version,
+					publisher: codemeta.provider.name,
+					keywords: codemeta.keywords.join(', ')
+				};
+
+				var bibTex = '@misc{' + codemeta.identifier + ",";
+				for (var prop in bibTexProps) {
+					bibTex += "\n  " + prop + ' = {' + bibTexProps[prop] + '},';
+				}
+				bibTex = bibTex.substr(0, bibTex.length - 1) + "\n}";
+
+				document.querySelector('.citemycode-modal__citation')
+					.innerHTML = bibTex;
+			}
+		});
+
+	// No codemeta.json file exists. Try to get info from
+	// the github API
+	} else {
+		alert('Get a citation from the Github API. This is not yet complete.');
+	}
 }
-
-// from https://davidwalsh.name/get-absolute-url
-var getAbsoluteUrl = (function() {
-	var a;
-
-	return function(url) {
-		if(!a) a = document.createElement('a');
-		a.href = url;
-
-		return a.href;
-	};
-})();
-
-
 
 
 
@@ -188,7 +158,6 @@ function codemetaExists(landingPageURL) {
     if (landingPageURL.substr(-1) != '/') {
         landingPageURL += '/';
     }
-    // Append CITATION.cff to the URL
 		landingPageURL += "blob/master/codemeta.json"
     // Check if URL returns 404
     if (checkUrlExists(landingPageURL)) {
@@ -208,8 +177,6 @@ function codemetaExists(landingPageURL) {
  ************************************************************************************/
 
 function run() {
-    reportInstallation()
-
     // Get the current URL
 		var currUrl = window.location.href
 
@@ -231,7 +198,7 @@ function run() {
 						var cffURL = codemetaExists(currUrl);
             if (cffURL != undefined) {
 								// Switch on button
-                insertIframe(
+                loadOnPage(
 									cffURL.replace('https://github.com', 'https://raw.githubusercontent.com')
 										.replace('/blob/', '/')
 								);
@@ -240,33 +207,7 @@ function run() {
     }
 }
 
-function runWithSettings(){
-    browser.storage.local.get(null, function(items){
-        settings = items
-        devLog("got settings", settings)
-        run()
-    });
-}
-
-function runWithDelay(){
-		var delay = 200  // milliseconds
-
-    // Single-page apps take a while to fully load all the HTML,
-    // and until they do we can't find the DOI
-    var longDelayHosts = [
-        "github.com"
-    ]
-
-    // it would be better to poll, but that is more complicated and we don't
-    // have many reports of SPAs like this yet.
-    if (longDelayHosts.includes(myHost)) {
-        delay = 500
-    }
-
-    setTimeout(runWithSettings, delay)
-}
-
-runWithDelay()
+window.addEventListener('load', run);
 
 
 
